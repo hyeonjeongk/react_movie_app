@@ -2,80 +2,42 @@ import { useState, useEffect } from "react";
 
 function App() {
   const [loading, setLoading] = useState(true);
-  const [coins, setCoins] = useState([]);
-  const [amount, setAmount] = useState(0);
-  const [price, setPrice] = useState(0);
-  const [symbol, setSymbol] = useState("");
-  const [inverted, setInverted] = useState(false);
-
+  const [movies, setMovies] = useState([]);
+  const getMovies = async () => {
+    const json = await (
+      await fetch(
+        `https://yts.mx/api/v2/list_movies.json?minimum_rating=8.8&sort_by=year`
+      )
+    ).json();
+    setMovies(json.data.movies);
+    setLoading(false);
+  };
   useEffect(() => {
-    fetch("https://api.coinpaprika.com/v1/tickers")
-      .then((response) => response.json())
-      .then((json) => {
-        setCoins(json);
-        setLoading(false);
-      });
+    getMovies();
   }, []);
-  const onSelect = (event) => {
-    if (event.target.value == "xx") {
-      setPrice(0);
-      setSymbol("");
-      return;
-    }
-
-    const coin = JSON.parse(event.target.value);
-    setPrice(coin.quotes.USD.price);
-    setSymbol(coin.symbol);
-  };
-  const onChange = (event) => {
-    setAmount(event.target.value);
-  };
-  const reset = () => {
-    setAmount(0);
-  };
-  const onInvert = () => {
-    reset();
-    setInverted((current) => !current);
-  };
-
+  console.log(movies);
   return (
     <div>
-      <h1>The Coins! {loading ? "" : `(${coins.length})`}</h1>
       {loading ? (
-        <strong>Loading...</strong>
+        <h1>Loading...</h1>
       ) : (
-        <select onChange={onSelect}>
-          <option value="xx">Select coin</option>
-          {coins.map((coin, index) => (
-            <option key={index} value={JSON.stringify(coin)}>
-              {coin.name} ({coin.symbol}) : ${coin.quotes.USD.price} USD
-            </option>
+        <div>
+          {movies.map((movie) => (
+            <div key={movie.id}>
+              <img src={movie.medium_cover_image}></img>
+              <h2>{movie.title}</h2>
+              <p>{movie.summary}</p>
+              <ul>
+                <li>
+                  {movie.genres.map((g) => (
+                    <li key={g}>{g}</li>
+                  ))}
+                </li>
+              </ul>
+            </div>
           ))}
-        </select>
+        </div>
       )}
-      <hr />
-      <div>
-        <input
-          value={inverted ? Math.round(amount * price * 100) / 100 : amount}
-          id="usd"
-          type="number"
-          onChange={onChange}
-          disabled={inverted}
-        ></input>
-        <label htmlFor="usd">USD</label>
-      </div>
-      <div>
-        <input
-          value={inverted ? amount : Math.round((amount / price) * 100) / 100}
-          id="symbol"
-          type="number"
-          onChange={onChange}
-          disabled={!inverted}
-        ></input>
-        <label htmlFor="symbol">{symbol}</label>
-      </div>
-      <button onClick={reset}>Reset</button>
-      <button onClick={onInvert}>{inverted ? "Turn back" : "Invert"}</button>
     </div>
   );
 }
