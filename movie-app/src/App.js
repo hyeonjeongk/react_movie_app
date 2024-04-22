@@ -1,36 +1,81 @@
 import { useState, useEffect } from "react";
 
 function App() {
-  const [toDo, setToDo] = useState("");
-  const [toDos, setToDos] = useState([]);
-  const onChange = (event) => setToDo(event.target.value);
-  const onSubmit = (event) => {
-    event.preventDefault();
-    if (toDo === "") {
+  const [loading, setLoading] = useState(true);
+  const [coins, setCoins] = useState([]);
+  const [amount, setAmount] = useState(0);
+  const [price, setPrice] = useState(0);
+  const [symbol, setSymbol] = useState("");
+  const [inverted, setInverted] = useState(false);
+
+  useEffect(() => {
+    fetch("https://api.coinpaprika.com/v1/tickers")
+      .then((response) => response.json())
+      .then((json) => {
+        setCoins(json);
+        setLoading(false);
+      });
+  }, []);
+  const onSelect = (event) => {
+    if (event.target.value == "xx") {
+      setPrice(0);
+      setSymbol("");
       return;
     }
-    setToDos((currentArray) => [...currentArray, toDo]);
-    setToDo("");
+
+    const coin = JSON.parse(event.target.value);
+    setPrice(coin.quotes.USD.price);
+    setSymbol(coin.symbol);
   };
-  console.log(toDos);
+  const onChange = (event) => {
+    setAmount(event.target.value);
+  };
+  const reset = () => {
+    setAmount(0);
+  };
+  const onInvert = () => {
+    reset();
+    setInverted((current) => !current);
+  };
+
   return (
-    <div className="App">
-      <h1>My To Dos ({toDos.length})</h1>
-      <form onSubmit={onSubmit}>
-        <input
-          onChange={onChange}
-          value={toDo}
-          type="text"
-          placeholder="Write your to do..."
-        />
-        <button>Add To Do</button>
-      </form>
+    <div>
+      <h1>The Coins! {loading ? "" : `(${coins.length})`}</h1>
+      {loading ? (
+        <strong>Loading...</strong>
+      ) : (
+        <select onChange={onSelect}>
+          <option value="xx">Select coin</option>
+          {coins.map((coin, index) => (
+            <option key={index} value={JSON.stringify(coin)}>
+              {coin.name} ({coin.symbol}) : ${coin.quotes.USD.price} USD
+            </option>
+          ))}
+        </select>
+      )}
       <hr />
-      <ul>
-        {toDos.map((item, index) => (
-          <li key={index}>{item}</li>
-        ))}
-      </ul>
+      <div>
+        <input
+          value={inverted ? Math.round(amount * price * 100) / 100 : amount}
+          id="usd"
+          type="number"
+          onChange={onChange}
+          disabled={inverted}
+        ></input>
+        <label htmlFor="usd">USD</label>
+      </div>
+      <div>
+        <input
+          value={inverted ? amount : Math.round((amount / price) * 100) / 100}
+          id="symbol"
+          type="number"
+          onChange={onChange}
+          disabled={!inverted}
+        ></input>
+        <label htmlFor="symbol">{symbol}</label>
+      </div>
+      <button onClick={reset}>Reset</button>
+      <button onClick={onInvert}>{inverted ? "Turn back" : "Invert"}</button>
     </div>
   );
 }
